@@ -16,7 +16,7 @@ pub fn part1() {
     let mut lines: Vec<Vec<char>> = Vec::new();
     let mut hor_hits = 0;
 
-    let mut last_line_length = 0;
+    let mut width = 0;
 
     for line in input.lines() {
         hor_hits += count_matches(line, search_strings);
@@ -25,29 +25,31 @@ pub fn part1() {
             chars.push(c);
         }
         lines.push(chars);
-        if (last_line_length != 0) && (last_line_length != line.len()) {
+        if (width != 0) && (width != line.len()) {
             panic!("Line length mismatch!");
         }
-        last_line_length = line.len();
+        width = line.len();
     }
 
-    // println!("Last line length: {}", last_line_length);
-    // println!("Number of lines: {}", lines.len());
+    let height = lines.len();
+
+    println!("Width: {}", width);
+    println!("Height: {}", height);
     
     let mut ver_hits = 0;
     let mut se_hits = 0;
     let mut sw_hits = 0;
 
     // In hindsight, I could have searched the longer diagonals rather than short, fixed ones
-    for x in 0..last_line_length {
-        let check_se = x <= last_line_length - search_str.len();
+    for x in 0..width {
+        let check_se = x <= width - search_str.len();
         let check_sw = x >= search_str.len() - 1;
         
         let mut column: String = String::new();
-        for y in 0..lines.len() {
+        for y in 0..height {
             column.push(lines[y][x]);
 
-            if y > lines.len() - search_str.len() {
+            if y > height - search_str.len() {
                 continue;
             }
             
@@ -80,4 +82,58 @@ pub fn part1() {
     println!("SW hits: {}", sw_hits);
 
     println!("Total hits: {}", hor_hits + ver_hits + se_hits + sw_hits);
+}
+
+pub fn part2() {
+    println!("Day 4, part 2!");
+    let input = fs::read_to_string("input/4.txt").expect("File not found!");
+
+    // Read input into a 2D array of characters
+    let mut lines: Vec<Vec<char>> = Vec::new();
+    let mut width = 0;
+    for line in input.lines() {
+        let mut chars: Vec<char> = Vec::new();
+        for c in line.chars() {
+            chars.push(c);
+        }
+        lines.push(chars);
+        if (width != 0) && (width != line.len()) {
+            panic!("Line length mismatch!");
+        }
+        width = line.len();
+    }
+    let height = lines.len();
+
+    println!("Width: {}", width);
+    println!("Height: {}", height);
+
+    let search_str = "MAS";
+    let reverse_str = search_str.chars().rev().collect::<String>();
+    let search_strings = [search_str, reverse_str.as_str()];
+    // "Radius"
+    let r = search_str.len() / 2;
+    let middle_char = search_str.chars().nth(r).unwrap();
+
+    let mut hits = 0;
+    for y in r..height - r {
+        for x in r..width - r {
+            if lines[y][x] != middle_char {
+                continue;
+            }
+            // Needs a bit more work to support other radii than 1
+            let fwd_slash = [lines[y + r][x - r], lines[y][x], lines[y - r][x + r]];
+            
+            // Continue if fwd_slash is not one of the search_strings
+            if !search_strings.iter().any(|&s| s == fwd_slash.iter().collect::<String>()) {
+                continue;
+            }
+
+            let bwd_slash = [lines[y - r][x - r], lines[y][x], lines[y + r][x + r]];
+            if search_strings.iter().any(|&s| s == bwd_slash.iter().collect::<String>()) {
+                hits += 1;
+            }
+        }
+    }
+
+    println!("Hits: {}", hits);
 }
