@@ -44,7 +44,7 @@ fn read_rules_and_updates(input: &str) -> (Vec<Vec<usize>>, Vec<Vec<usize>>) {
     (rules, updates)
 }
 
-pub fn part1() {
+pub fn part1_and_part2() {
     println!("Day 5, part 1!");
     let input = fs::read_to_string("input/5.txt").expect("File not found!");
   
@@ -78,7 +78,7 @@ pub fn part1() {
             sum += update[update.len() / 2];
         }
     }
-    println!("Approach A: Sum: {}, time spent: {} ms", sum, sw.ms());
+    println!("Part 1, Approach A: Sum: {}, time spent: {} ms", sum, sw.ms());
     
     // Approach B: (maybe faster). EDIT: It turned out to be ~7 times faster (4 ms compared to 28 ms above)
     sw.restart();
@@ -92,6 +92,9 @@ pub fn part1() {
         entry.push(x);
     }
 
+    // Invalid updates for part 2
+    let mut invalid_updates = Vec::new();
+
     sum = 0;
     for update in &updates {
         let mut valid = true;
@@ -102,6 +105,7 @@ pub fn part1() {
                 // Array intersect [...] with proceeding numbers. If collision: Fail
                 if do_vectors_overlap(&xs, &update, (i + 1, update.len())) {
                     valid = false;
+                    invalid_updates.push(update);
                     break;
                 }
             }
@@ -110,5 +114,32 @@ pub fn part1() {
             sum += update[update.len() / 2];
         }
     }
-    println!("Approach B: Sum: {}, time spent: {} ms", sum, sw.ms());
+    println!("Part 1, Approach B: Sum: {}, time spent: {} ms", sum, sw.ms());
+
+    // Part 2: Ended up using a custom sort_by, which felt a bit like cheating,
+    // after some prev attempts with swaps and shifting weren't quite correct on the larger input
+    sw.restart();
+
+    sum = 0;
+    for update in invalid_updates {
+        let mut mut_update = update.to_vec();
+        mut_update.sort_by(|a, b| {
+            if let Some(a_xs) = rules_by_y.get(a) {
+                // Check if b is in a_xs, if yes, a is greater than b
+                if a_xs.contains(b) {
+                    return std::cmp::Ordering::Greater;
+                }
+            }
+            if let Some(b_xs) = rules_by_y.get(b) {
+                // Check if a is in b_xs, if yes, a is less than b
+                if b_xs.contains(a) {
+                    return std::cmp::Ordering::Less;
+                }
+            }
+            return std::cmp::Ordering::Equal;
+        });
+
+        sum += mut_update[mut_update.len() / 2];
+    }
+    println!("Part 2: Sum: {}, time spent: {} ms", sum, sw.ms());
 }
