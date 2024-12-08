@@ -1,9 +1,10 @@
 use std::fs;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use gcd::Gcd;
 
-fn read_map(path: &str) -> (Vec<Vec<char>>, (usize, usize), HashMap<char, Vec<(i32, i32)>>) {
-    let input = fs::read_to_string(path).expect("File not found!");
+fn read_dim_and_freqs(file_path: &str) -> ((usize, usize), HashMap<char, Vec<(i32, i32)>>) {
+    let input = fs::read_to_string(file_path).expect("File not found!");
 
     let mut map: Vec<Vec<char>> = Vec::new();
     let mut dim = (0, 0);
@@ -25,7 +26,7 @@ fn read_map(path: &str) -> (Vec<Vec<char>>, (usize, usize), HashMap<char, Vec<(i
         dim.0 = line.len();
     }
     dim.1 = map.len();
-    (map, dim, freqs)
+    (dim, freqs)
 }
 
 fn within_bounds(dim: (usize, usize), pos: (i32, i32)) -> bool {
@@ -35,7 +36,7 @@ fn within_bounds(dim: (usize, usize), pos: (i32, i32)) -> bool {
 pub fn part1() {
     println!("Day 8, part 1");
 
-    let (_map, dim, freqs) = read_map("input/8.txt");
+    let (dim, freqs) = read_dim_and_freqs("input/8.txt");
 
     let mut all_anti_pos = HashSet::new();
     for freq in freqs {
@@ -53,6 +54,42 @@ pub fn part1() {
                     if !all_anti_pos.contains(anti_pos) && within_bounds(dim, *anti_pos) {
                         all_anti_pos.insert(*anti_pos);
                     }
+                }
+            }
+        }
+    }
+    println!("Result: {}", all_anti_pos.len());
+}
+
+pub fn part2() {
+    println!("Day 8, part 2");
+
+    let (dim, freqs) = read_dim_and_freqs("input/8.txt");
+
+    let mut all_anti_pos = HashSet::new();
+    for freq in freqs {
+        let positions = freq.1;
+        for i in 0..positions.len()-1 {
+            let pos_1 = positions[i];
+            all_anti_pos.insert(pos_1);
+            for j in i+1..positions.len() {
+                let pos_2 = positions[j];
+                let mut diff = (pos_2.0 - pos_1.0, pos_2.1 - pos_1.1);
+
+                // Reduce diff vector to smallest possible values by dividing by gcd
+                let gcd = (diff.0.abs() as usize).gcd(diff.1.abs() as usize) as i32;
+                diff = (diff.0 / gcd, diff.1 / gcd);
+                
+                // Run to bounds in either direction from pos_1
+                let mut anti_pos = (pos_1.0 - diff.0, pos_1.1 - diff.1);
+                while within_bounds(dim, anti_pos) {
+                    all_anti_pos.insert(anti_pos);
+                    anti_pos = (anti_pos.0 - diff.0, anti_pos.1 - diff.1);
+                }
+                anti_pos = (pos_1.0 + diff.0, pos_1.1 + diff.1);
+                while within_bounds(dim, anti_pos) {
+                    all_anti_pos.insert(anti_pos);
+                    anti_pos = (anti_pos.0 + diff.0, anti_pos.1 + diff.1);
                 }
             }
         }
