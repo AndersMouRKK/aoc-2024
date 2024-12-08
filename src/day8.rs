@@ -33,10 +33,8 @@ fn within_bounds(dim: (usize, usize), pos: (i32, i32)) -> bool {
     pos.0 >= 0 && pos.0 < (dim.0 as i32) && pos.1 >= 0 && pos.1 < (dim.1 as i32)
 }
 
-pub fn part1() {
-    println!("Day 8, part 1");
-
-    let (dim, freqs) = read_dim_and_freqs("input/8.txt");
+fn part1(file_path: &str) -> usize {
+    let (dim, freqs) = read_dim_and_freqs(file_path);
 
     let mut all_anti_pos = HashSet::new();
     for freq in freqs {
@@ -58,13 +56,11 @@ pub fn part1() {
             }
         }
     }
-    println!("Result: {}", all_anti_pos.len());
+    all_anti_pos.len()
 }
 
-pub fn part2() {
-    println!("Day 8, part 2");
-
-    let (dim, freqs) = read_dim_and_freqs("input/8.txt");
+fn part2(file_path: &str) -> usize {
+    let (dim, freqs) = read_dim_and_freqs(file_path);
 
     let mut all_anti_pos = HashSet::new();
     for freq in freqs {
@@ -94,5 +90,30 @@ pub fn part2() {
             }
         }
     }
-    println!("Result: {}", all_anti_pos.len());
+    all_anti_pos.len()
+}
+
+pub fn run(part: u8, test: bool) -> usize {
+    let file_path = format!("input/{}8.txt", if test { "test/" } else { "" });
+    let result = match part {
+        1 => part1(&file_path),
+        2 => part2(&file_path),
+        _ => 0,
+    };
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn part1() {
+        assert_eq!(run(1, true), 14);
+    }
+
+    #[test]
+    fn part2() {
+        assert_eq!(run(2, true), 34);
+    }
 }

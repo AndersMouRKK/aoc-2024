@@ -1,5 +1,5 @@
-pub mod day8;
+mod day8;
 
 fn main() {
-    day8::part2();
+    println!("Result: {}", day8::run(2, false));
 }
