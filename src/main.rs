@@ -1,5 +1,5 @@
-mod day8;
+mod day9;
 
 fn main() {
-    println!("Result: {}", day8::run(2, false));
+    println!("Result: {}", day9::run(1, false));
 }
