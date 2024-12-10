@@ -1,4 +1,5 @@
 use std::fs;
+use std::collections::HashMap;
 
 fn read_blocks(file_path: &str) -> Vec<i32> {
     let input = fs::read_to_string(file_path).expect("File not found!");
@@ -18,6 +19,17 @@ fn read_blocks(file_path: &str) -> Vec<i32> {
         is_file = !is_file;
     }
     blocks
+}
+
+fn get_keys_by_index0(spaces: &HashMap<usize, Vec<usize>>) -> Vec<usize> {
+    let mut keys = Vec::new();
+    for key in spaces.keys() {
+        keys.push(*key);
+    }
+    keys.sort_by(|a, b| {
+        spaces.get(a).unwrap()[0].cmp(&spaces.get(b).unwrap()[0])
+    });
+    keys
 }
 
 fn part1(file_path: &str) -> i64 {
@@ -51,8 +63,83 @@ fn part1(file_path: &str) -> i64 {
     sum
 }
 
-fn part2(_file_path: &str) -> i64 {
-    0
+fn part2(file_path: &str) -> i64 {
+    let mut blocks = read_blocks(file_path);
+
+    // Store spaces with size and start indices for fast lookup
+    let mut spaces = HashMap::new();
+    let mut size = 0;
+    for i in 0..blocks.len() {
+        if blocks[i] == -1 {
+            size += 1;
+        } else if size > 0 {
+            let entry = spaces.entry(size).or_insert(Vec::new());
+            entry.push(i - size);
+            size = 0;
+        }
+    }
+    // println!("Spaces: {:?}", spaces);
+    let mut ordered_spaces = get_keys_by_index0(&spaces);
+    // println!("Ordered spaces: {:?}", ordered_spaces);
+
+    size = 0;
+    let mut last_val = -2;
+    for i in (0..blocks.len()).rev() {
+        if blocks[i] != -1 && (i == blocks.len()-1 || blocks[i] == last_val || last_val == -1) {
+            size += 1;
+        } else if size > 0 {
+            // println!("i: {}, size: {}, last_val: {}, blocks[i]: {}", i, size, last_val, blocks[i]);
+            let mut did_swap = false;
+            for space_size in ordered_spaces.iter() {
+                if space_size < &size {
+                    continue;
+                }
+                let space_indices = spaces.get_mut(space_size).unwrap();
+                if space_indices[0] > i {
+                    continue;
+                }
+                // println!("Size: {}, Space size: {}, space_indices: {:?}", size, space_size, space_indices);
+                let space_idx = space_indices.remove(0);
+                // println!("Moving to Space idx: {}", space_idx);
+                did_swap = true;
+                for j in 0..size {
+                    blocks.swap(i + 1 + j, space_idx + j);
+                }
+                if space_indices.is_empty() {
+                    spaces.remove(space_size);
+                }
+                if space_size > &size {
+                    spaces.entry(space_size - size).or_insert(Vec::new()).push(space_idx + size);
+                    spaces.get_mut(&(space_size - size)).unwrap().sort();
+                }
+                break;
+            } 
+            if did_swap {
+                // println!("Blocks: {:?}", blocks);
+                ordered_spaces = get_keys_by_index0(&spaces);
+                if ordered_spaces.len() == 0 || spaces.get(&ordered_spaces[0]).unwrap()[0] > i {
+                    break;
+                }
+            }
+            if blocks[i] != -1 {
+                size = 1;
+            } else {
+                size = 0;
+            }
+        }
+        last_val = blocks[i];
+    }
+    // println!("{:?}", blocks);
+
+    // Calc checksum
+    let mut sum: i64 = 0;
+    for i in 0..blocks.len() {
+        if blocks[i] != -1 {
+            sum += (i as i64) * blocks[i] as i64;
+        }
+    }
+
+    sum
 }
 
 pub fn run(part: u8, test: bool) -> i64 {
