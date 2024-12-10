@@ -1,5 +1,7 @@
-mod day9;
+mod day10;
+use simple_stopwatch::Stopwatch;
 
 fn main() {
-    println!("Result: {}", day9::run(2, false));
+    let sw = Stopwatch::start_new();
+    println!("Result: {}, spent {} ms", day10::run(1, false), sw.ms());
 }
