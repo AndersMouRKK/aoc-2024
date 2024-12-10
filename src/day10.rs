@@ -12,10 +12,10 @@ fn within_bounds(dim: (usize, usize), pos: (i32, i32)) -> bool {
     pos.0 >= 0 && pos.0 < (dim.0 as i32) && pos.1 >= 0 && pos.1 < (dim.1 as i32)
 }
 
-fn trailhead_score(map: &Vec<Vec<usize>>, dim: (usize, usize), pos: (i32, i32), mut path: HashSet<(i32, i32)>, ends: &mut HashSet<(i32, i32)>) -> usize {
+fn trailhead_score(map: &Vec<Vec<usize>>, dim: (usize, usize), pos: (i32, i32), mut path: HashSet<(i32, i32)>, ends: &mut HashSet<(i32, i32)>, unique_ends: bool) -> usize {
     let val = map[pos.1 as usize][pos.0 as usize];
     if val == 9 {
-        match ends.insert(pos) {
+        match !unique_ends || ends.insert(pos) {
             true => return 1,
             false => return 0,
         }
@@ -29,7 +29,7 @@ fn trailhead_score(map: &Vec<Vec<usize>>, dim: (usize, usize), pos: (i32, i32), 
         }
     }
     path.insert(pos);
-    valid.iter().fold(0, |acc, n| acc + trailhead_score(map, dim, *n, path.clone(), ends))
+    valid.iter().fold(0, |acc, n| acc + trailhead_score(map, dim, *n, path.clone(), ends, unique_ends))
 }
 
 fn part1(file_path: &str) -> usize {
@@ -38,16 +38,24 @@ fn part1(file_path: &str) -> usize {
     for y in 0..dim.1 {
         for x in 0..dim.0 {
             if map[y][x] == 0 {
-                sum += trailhead_score(&map, dim, (x as i32, y as i32), HashSet::new(), &mut HashSet::new());
+                sum += trailhead_score(&map, dim, (x as i32, y as i32), HashSet::new(), &mut HashSet::new(), true);
             }
         }
     }
     sum
 }
 
-fn part2(_file_path: &str) -> usize {
-    // TODO
-    0
+fn part2(file_path: &str) -> usize {
+    let (map, dim) = read_map(file_path);
+    let mut sum = 0;
+    for y in 0..dim.1 {
+        for x in 0..dim.0 {
+            if map[y][x] == 0 {
+                sum += trailhead_score(&map, dim, (x as i32, y as i32), HashSet::new(), &mut HashSet::new(), false);
+            }
+        }
+    }
+    sum
 }
 
 pub fn run(part: u8, test: bool) -> usize {
