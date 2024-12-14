@@ -181,4 +181,4 @@ mod tests {
     fn part1() {
         assert_eq!(run(1, true), 1928);
     }
-}   
+}
