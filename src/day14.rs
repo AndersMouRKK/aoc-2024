@@ -1,4 +1,4 @@
-use std::{fs, thread, time, collections::HashMap};
+use std::{fs, thread, time, collections::HashMap, collections::HashSet};
 use std::cmp;
 use regex::Regex;
 
@@ -35,18 +35,56 @@ fn move_robots(robots: &mut Vec<((i32, i32), (i32, i32))>, w: i32, h: i32) {
 }
 
 fn detect_pattern(state: &mut State) {
-    let mut total_diff = 0;
+    let mut total_x_diff = 0;
+    let mut increased_widths = (state.h / -2) + 5;
+    let mut lines_many_robots = 0;
+    let mut total_neighbours = 0;
 
+    let mut prev_w = 0;
+    let mut x_vals_above: HashSet<i32> = HashSet::new();
     for y in 0..state.h {
-        let mut center_x_diff = 0;
+        let mut center_x_diff_sum = 0;
+        let mut robots_on_row = 0;
+        let mut x_min = state.w;
+        let mut x_max = 0;
+        let mut x_vals = HashSet::new();
         for robot in state.robots.iter() {
             if robot.0.1 == y {
-                center_x_diff += robot.0.0 - state.w / 2;
+                robots_on_row += 1;
+                let center_x_diff = robot.0.0 - state.w / 2;
+                x_min = cmp::min(x_min, center_x_diff);
+                x_max = cmp::max(x_max, center_x_diff);
+                center_x_diff_sum += center_x_diff;
+                x_vals.insert(robot.0.0);
+                if x_vals_above.contains(&robot.0.0) || x_vals_above.contains(&(robot.0.0 - 1)) || x_vals_above.contains(&(robot.0.0 + 1)) {
+                    total_neighbours += 1;
+                }
             }
         }
-        total_diff += center_x_diff.abs();
+        if robots_on_row > 0 {
+            total_x_diff += center_x_diff_sum.abs()/* / robots_on_row*/;
+            let width = x_max - x_min + 1;
+            if width > prev_w {
+                increased_widths += 1;
+            }
+            prev_w = width;
+            if robots_on_row > 8 {
+                lines_many_robots += 1;
+            }
+        }
+        x_vals_above = x_vals;
     }
-    state.set_pattern_score(cmp::max(5000 - total_diff, 0));
+    state.total_x_diff = total_x_diff;
+    state.increased_widths = increased_widths;
+    state.robot_lines = lines_many_robots;
+    state.neighbours = total_neighbours;
+
+    let x_diff = 2 * cmp::max(0,5000 - total_x_diff);
+    let incw = 300 * cmp::max(0, increased_widths);
+    let many_robots = 400 * cmp::max(0, lines_many_robots);
+    let neighbours = 100 * total_neighbours;
+
+    state.set_pattern_score(x_diff + incw + many_robots + neighbours);
 }
 
 fn part1(file_path: &str, w: i32, h: i32) -> i64 {
@@ -84,14 +122,20 @@ pub struct State {
     sec: i64,
     w: i32,
     h: i32,
-    fps: i32,
+    fps: f32,
+    total_x_diff: i32,
+    increased_widths: i32,
+    robot_lines: i32,
+    neighbours: i32,
     pattern_score: i32,
     min_pattern_score: i32,
     max_pattern_score: i32,
     total_pattern_score: i64,
     draw_threshold: i32,
+    inc_draw_threshold: i32,
     draw_at: i64,
-    stop_at: i64
+    stop_at: i64,
+    clear_screen: bool
 }
 
 impl State {
@@ -123,14 +167,20 @@ pub fn part2_setup() -> State {
         sec: 0,
         w: 101,
         h: 103,
-        fps: 1,
+        fps: 0.25,
+        total_x_diff: 0,
+        increased_widths: 0,
+        robot_lines: 0,
+        neighbours: 0,
         pattern_score: 0,
         min_pattern_score: 5000,
         max_pattern_score: -1,
         total_pattern_score: 0,
-        draw_threshold: 2100,
+        draw_threshold: 7000,
+        inc_draw_threshold: 40,
         draw_at: 0,
-        stop_at: 1000000
+        stop_at: 20000,
+        clear_screen: false
     }
 }
 
@@ -140,9 +190,11 @@ pub fn part2_play(state: &mut State) {
         
         detect_pattern(state);
         if state.sec >= state.draw_at && state.pattern_score >= state.draw_threshold {
-            clearscreen::clear().unwrap();
+            if state.clear_screen {
+                clearscreen::clear().unwrap();
+            }
             println!("Sec: {}, FPS: {}, Stopping at: {}, pattern score: {}", state.sec, state.fps, state.stop_at, state.pattern_score);
-    
+            println!("Total diff: {}, increased widths: {}, robot lines: {}, neighbourds: {}", state.total_x_diff, state.increased_widths, state.robot_lines, state.neighbours);
             for y in 0..state.h {
                 let mut row = ".".repeat(state.w as usize);
                 for robot in state.robots.iter() {
@@ -153,7 +205,9 @@ pub fn part2_play(state: &mut State) {
                 println!("{}", row);
             }
     
-            thread::sleep(time::Duration::from_millis(1000 / state.fps as u64));
+            thread::sleep(time::Duration::from_millis((1000.0 / state.fps) as u64));
+            // state.draw_threshold += state.inc_draw_threshold;
+            state.draw_threshold = state.pattern_score + state.inc_draw_threshold;
         }
 
         state.sec += 1;
