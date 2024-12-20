@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 clearscreen = "3.0.0"
+colored = "2.2.0"
 gcd = "2.3.0"
 regex = "1.11.1"
 simple-stopwatch = "0.1.4"
